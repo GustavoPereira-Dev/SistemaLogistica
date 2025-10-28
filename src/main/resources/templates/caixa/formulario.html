@@ -1,0 +1,39 @@
+<!DOCTYPE html>
+<html lang ="en" xmlns:th="http://thymeleaf.org" >
+
+<head>
+<title>Cadastro Caixa</title>
+</head>
+<body>
+<div layout:fragment="header">
+	<div class="box">
+		<h1>Cadastro Caixa</h1>
+		<form method="post" action="/caixa">
+			<input type="hidden" name="_method" value="put" th:if="${caixa != null}">
+			<input type="hidden" name="id" th:value="${caixa?.id}">
+			
+			<div>
+				<label for="altura"> Altura: </label>
+				<input type="number" id="altura" name="altura" th:value="${caixa?.altura}">
+			</div>
+			<div>
+				<label for="largura"> Largura: </label>
+				<input type="number" id="largura" name="largura" th:value="${caixa?.largura}">
+			</div>
+			<div>
+				<label for="comprimento"> Comprimento: </label>
+				<input type="number" id="comprimento" name="comprimento" th:value="${caixa?.comprimento}">
+			</div>
+			<div>
+				<label for="materia"> Material: </label>
+				<input type="text" id="material" name="material" th:value="${caixa?.material}">
+			</div>
+			<div>
+				<label for="limitePeso"> Limite do Peso: </label>
+				<input type="number" id="limitePeso" name="limitePeso" th:value="${caixa?.limitePeso}">
+			</div>
+			<input type="submit" value="Cadastrar">
+		</form>
+	</div>
+</body>
+</html>

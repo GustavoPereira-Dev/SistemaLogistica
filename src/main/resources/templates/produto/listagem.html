@@ -1,0 +1,36 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head th:replace="~{fragmentos/head :: head('Listagem Produtos')}"></head>
+<body>
+<header th:replace="~{fragmentos/header :: header(activePage='produto')}"></header>
+    <h1> Lista de Produto</h1>
+    <a href="/produto/formulario">Novo</a>
+    <table>
+        <thead>
+            <tr>
+                <th>Nome</th>
+                <th>Peso</th>
+                <th>Preço</th>
+                <th>Ações</th>
+            </tr>
+        </thead>
+        <tbody>
+            <tr th:each="produto : ${lista}">
+                <td th:text="${produto.nome}"></td>
+                <td th:text="${produto.peso}"></td>
+                <td th:text="${produto.preco}"></td>
+                 
+                <td>
+					<a th:href="@{/produto/formulario?id={id}(id=${produto.id})}"><button>Editar</button></a>
+					
+					<form action="/produto" method="post">
+						<input type="hidden" name="_method" value="delete">
+						<input type="hidden" name="id" th:value="${produto.id}">
+						<input type="submit" value="Excluir">
+					</form>
+				</td>
+            </tr>
+        </tbody>
+    </table>
+</body>
+</html>
