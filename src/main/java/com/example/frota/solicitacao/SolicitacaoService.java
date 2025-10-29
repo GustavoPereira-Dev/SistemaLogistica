@@ -18,6 +18,8 @@ import org.springframework.web.client.RestTemplate;
 import org.springframework.web.util.UriComponentsBuilder;
 
 import java.net.URI;
+import java.time.LocalDate;
+import java.time.LocalDateTime;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -52,7 +54,7 @@ public class SolicitacaoService {
     @Value("${here.geocode.url}")
     private String urlGeocode;
 
-    public Solicitacao salvarOuAtualizar(AtualizacaoSolicitacao dto) {
+    public Solicitacao salvarOuAtualizar(AtualizacaoSolicitacao dto) throws Exception {
         Caixa caixa = caixaService.procurarPorId(dto.caixaId())
                 .orElseThrow(() -> new EntityNotFoundException("Caixa não encontrada com ID: " + dto.caixaId()));
 
@@ -66,46 +68,39 @@ public class SolicitacaoService {
             Solicitacao existente = solicitacaoRepository.findById(dto.id())
                     .orElseThrow(() -> new EntityNotFoundException("Solicitação não encontrada com ID: " + dto.id()));
             solicitacaoMapper.updateEntityFromDto(dto, existente);
-            existente.setCaixa(caixa);
-            existente.setProduto(produto);
-            existente.setCaminhao(caminhao);
-
-            //Calcular frete para atualizar o preco
-            //O calculo usa o peso considerado, esse deve ser o peso do produto
-            Map<String, Object> freteInfo = calcularFrete(existente.getCepOrigem(), existente.getCepDestino(), existente.getPesoConsideradoKg());
-
-            //Dou cast de Object para Number para poder transformar em double
-            double distancia = ((Number) freteInfo.get("distanciaKm") ).doubleValue();
-            existente.setDistanciaKm(distancia);
-
-            double custoTotalFrete = ((Number) freteInfo.get("valorFreteTotal")).doubleValue();
-            existente.setCustoFreteCalculado(custoTotalFrete);
-
-            double totalPedagios = ((Number) freteInfo.get("pedagiosTotal")).doubleValue();
-            existente.setCustoPedagios(totalPedagios);
-
-            return solicitacaoRepository.save(existente);
+            return criarSolicitacao(existente, caixa, produto, caminhao);
         } else {
             Solicitacao novaSolicitacao = solicitacaoMapper.toEntityFromAtualizacao(dto);
-            novaSolicitacao.setCaixa(caixa);
-            novaSolicitacao.setProduto(produto);
-            novaSolicitacao.setCaminhao(caminhao);
-
-            //O calculo se repete da mesma forma que em cima
-            Map<String, Object> freteInfo = calcularFrete(novaSolicitacao.getCepOrigem(), novaSolicitacao.getCepDestino(), novaSolicitacao.getPesoConsideradoKg());
-
-            //Dou cast de Object para Number para poder transformar em double
-            double distancia = ((Number) freteInfo.get("distanciaKm") ).doubleValue();
-            novaSolicitacao.setDistanciaKm(distancia);
-
-            double custoTotalFrete = ((Number) freteInfo.get("valorFreteTotal")).doubleValue();
-            novaSolicitacao.setCustoFreteCalculado(custoTotalFrete);
-
-            double totalPedagios = ((Number) freteInfo.get("pedagiosTotal")).doubleValue();
-            novaSolicitacao.setCustoPedagios(totalPedagios);
-
-            return solicitacaoRepository.save(novaSolicitacao);
+            return criarSolicitacao(novaSolicitacao, caixa, produto, caminhao);
         }
+    }
+
+    private Solicitacao criarSolicitacao(Solicitacao solicitacao, Caixa caixa, Produto produto, Caminhao caminhao) throws Exception {
+        solicitacao.setCaixa(caixa);
+        solicitacao.setProduto(produto);
+        solicitacao.setCaminhao(caminhao);
+        double pesoProduto = produto.getPeso();
+
+        //Calcular frete para atualizar o preco
+        //O calculo usa o peso considerado, esse deve ser o peso do produto
+        Map<String, Object> freteInfo = calcularFrete(solicitacao.getCepOrigem(), solicitacao.getCepDestino(), pesoProduto);
+
+        //Dou cast de Object para Number para poder transformar em double
+        double distancia = ((Number) freteInfo.get("distanciaKm")).intValue();
+        solicitacao.setDistanciaKm(distancia);
+
+        double custoTotalFrete = ((Number) freteInfo.get("valorFreteTotal")).doubleValue();
+        solicitacao.setCustoFreteCalculado(custoTotalFrete);
+
+        double totalPedagios = ((Number) freteInfo.get("pedagiosTotal")).doubleValue();
+        solicitacao.setCustoPedagios(totalPedagios);
+
+        double pesoTotal = ((Number) freteInfo.get("pesoKg")).doubleValue();
+        solicitacao.setPesoConsideradoKg(pesoTotal);
+
+        solicitacao.setDataSolicitacao(LocalDateTime.now());
+
+        return solicitacaoRepository.save(solicitacao);
     }
 
     public List<Solicitacao> procurarTodos() {
@@ -147,13 +142,13 @@ public class SolicitacaoService {
         }
     }
 
-    public Object buscarRota(String origem, String destino) {
+    public Map<String, Object> buscarRota(String origem, String destino) {
         URI uri = UriComponentsBuilder
                 .fromUriString(urlRotas)
                 .queryParam("transportMode", "truck")
                 .queryParam("origin", origem)
                 .queryParam("destination", destino)
-                .queryParam("return", "tolls")
+                .queryParam("return", "summary,tolls")
                 .queryParam("apiKey", apiKey)
                 .build()
                 .toUri();
@@ -203,37 +198,37 @@ public class SolicitacaoService {
                 return result;
             }
 
-            Map<String, String> erro = new HashMap<>();
+            Map<String, Object> erro = new HashMap<>();
             erro.put("erro", "Nenhuma rota encontrada.");
             return erro;
 
         } catch (HttpClientErrorException e) {
-            Map<String, String> erro = new HashMap<>();
+            Map<String, Object> erro = new HashMap<>();
             erro.put("error", "Erro ao buscar rota: " + e.getStatusCode());
             return erro;
         } catch (Exception e) {
-            Map<String, String> erro = new HashMap<>();
+            Map<String, Object> erro = new HashMap<>();
             erro.put("error", "Erro ao processar a resposta da API de rotas");
             return erro;
         }
     }
 
-    public Map<String, Object> calcularFrete(String cepOrigem, String cepDestino, double pesoKg) {
+    public Map<String, Object> calcularFrete(String cepOrigem, String cepDestino, double pesoKg) throws Exception {
         String origemCoords = buscarCoordenadasCep(cepOrigem);
         String destinoCoords = buscarCoordenadasCep(cepDestino);
 
-        Map<String, Object> rota = (Map<String, Object>) buscarRota(origemCoords, destinoCoords);
+        Map<String, Object> rota = buscarRota(origemCoords, destinoCoords);
 
-        if (rota.containsKey("error")) {
-            return rota; // Retorna erro caso a API falhe
+        if (rota.containsKey("error") || rota.containsKey("erro")) {
+            throw new Exception("Erro ao calcular frete: " + rota.values()); // Retorna erro caso a API falhe
         }
 
         double distanciaMetros = ((Number) rota.get("distancia")).doubleValue();
-        double distanciaKm = distanciaMetros / 1000.0;
+        double distanciaKm = (distanciaMetros / 1000.0);
         double totalPedagios = ((Number) rota.get("totalPedagios")).doubleValue();
 
         double valorPorKm = 2.5; //2,50 reais por km rodado
-        double valorPorKg = 0.20; // 0,20 reais por kg da caixa 
+        double valorPorKg = 0.20; // 0,20 reais por kg da caixa
 
         double custoDistancia = distanciaKm * valorPorKm;
         double custoPeso = pesoKg * valorPorKg;

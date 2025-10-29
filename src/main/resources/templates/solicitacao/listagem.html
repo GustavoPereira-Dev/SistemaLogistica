@@ -23,8 +23,9 @@
 	            <tr>
 	                <th scope="col">Produto</th>
 	                <th scope="col">Caixa</th>
-	                <th scope="col">Remetente</th>
-	                <th scope="col">Destinatário</th>
+	                <th scope="col">Caminhão</th>
+	                <th scope="col">CEP Origem</th>
+	                <th scope="col">CEP Destino</th>
 	                <th scope="col">Data Solicitação</th>
 	                <th scope="col">Distância KM</th>
 	                <th scope="col">Custo de Pedágios</th>
@@ -62,7 +63,7 @@
 	                <td th:text="${solicitacao.custoPedagios}"></td>
 	                <td th:text="${solicitacao.pesoConsideradoKg}"></td>
 	                <td th:text="${solicitacao.custoFreteCalculado}"></td>
-	               
+
 
 						
 					<td><a th:href="@{'/solicitacao/formulario/' + ${solicitacao.id}}"

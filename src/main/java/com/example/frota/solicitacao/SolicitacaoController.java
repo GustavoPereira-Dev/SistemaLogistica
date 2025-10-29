@@ -108,8 +108,10 @@ public class SolicitacaoController {
 	    } catch (EntityNotFoundException e) {
 	        redirectAttributes.addFlashAttribute("error", e.getMessage());
 	        return "redirect:/solicitacao/formulario" + (dto.id() != null ? "?id=" + dto.id() : "");
-	    }
-	}
+	    } catch (Exception e) {
+            throw new RuntimeException(e);
+        }
+    }
 	
 	@GetMapping("/delete/{id}")
 	@Transactional
