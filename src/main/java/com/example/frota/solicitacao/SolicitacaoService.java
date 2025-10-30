@@ -85,9 +85,8 @@ public class SolicitacaoService {
         	throw new Exception("A caixa não suporta o peso do Produto");
        	}
         
-        double pesoCubado = calculaPesoCubado(solicitacao.getCaixa().getComprimento(), solicitacao.getCaixa().getComprimento(), solicitacao.getCaixa().getComprimento(), solicitacao.getCaminhao().getFatorCubagem());
-        
-        
+        double pesoCubado = calculaPesoCubado(solicitacao.getCaixa().getComprimento(), solicitacao.getCaixa().getLargura(), solicitacao.getCaixa().getAltura(), solicitacao.getCaminhao().getFatorCubagem());
+
         //Calcular frete para atualizar o preco
         //O calculo usa o peso considerado, esse deve ser o peso do produto
         Map<String, Object> freteInfo = calcularFrete(solicitacao.getCepOrigem(), solicitacao.getCepDestino(), comparaPesoCubadoPesoReal(pesoCubado, pesoProduto));
@@ -96,13 +95,13 @@ public class SolicitacaoService {
         double distancia = ((Number) freteInfo.get("distanciaKm")).intValue();
         solicitacao.setDistanciaKm(distancia);
 
-        double custoTotalFrete = ((Number) freteInfo.get("valorFreteTotal")).doubleValue();
+        double custoTotalFrete = (double) Math.round(((Number) freteInfo.get("valorFreteTotal")).doubleValue());
         solicitacao.setCustoFreteCalculado(custoTotalFrete);
 
         double totalPedagios = ((Number) freteInfo.get("pedagiosTotal")).doubleValue();
         solicitacao.setCustoPedagios(totalPedagios);
 
-        double pesoTotal = ((Number) freteInfo.get("pesoKg")).doubleValue();
+        double pesoTotal = (double) Math.round(((Number) freteInfo.get("pesoKg")).doubleValue());
         solicitacao.setPesoConsideradoKg(pesoTotal);
 
         solicitacao.setDataSolicitacao(LocalDateTime.now());
@@ -253,7 +252,7 @@ public class SolicitacaoService {
 	public double calculaPesoCubado(double comprimento, double largura, double altura, double fatorCubagem) {
 		double volume = comprimento * largura * altura;
 		double pesoCubado = volume * fatorCubagem;
-		return pesoCubado;
+		return pesoCubado / 1000;
 	}
 	
 	public double comparaPesoCubadoPesoReal(double pesoCubado, double pesoReal) {
