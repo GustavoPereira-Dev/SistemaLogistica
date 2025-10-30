@@ -17,7 +17,6 @@ public record CadastroSolicitacao(
 		Double custoPedagios,
 		Double pesoConsideradoKg,
 		Double custoFreteCalculado
-		
 		) {
 }
 

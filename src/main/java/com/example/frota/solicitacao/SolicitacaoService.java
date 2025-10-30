@@ -18,7 +18,6 @@ import org.springframework.web.client.RestTemplate;
 import org.springframework.web.util.UriComponentsBuilder;
 
 import java.net.URI;
-import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.HashMap;
 import java.util.List;
@@ -79,11 +78,19 @@ public class SolicitacaoService {
         solicitacao.setCaixa(caixa);
         solicitacao.setProduto(produto);
         solicitacao.setCaminhao(caminhao);
+        
         double pesoProduto = produto.getPeso();
-
+        
+        if(!verificaTamanhoCaixa(pesoProduto, caixa.getLimitePeso())) {
+        	throw new Exception("A caixa não suporta o peso do Produto");
+       	}
+        
+        double pesoCubado = calculaPesoCubado(solicitacao.getCaixa().getComprimento(), solicitacao.getCaixa().getComprimento(), solicitacao.getCaixa().getComprimento(), solicitacao.getCaminhao().getFatorCubagem());
+        
+        
         //Calcular frete para atualizar o preco
         //O calculo usa o peso considerado, esse deve ser o peso do produto
-        Map<String, Object> freteInfo = calcularFrete(solicitacao.getCepOrigem(), solicitacao.getCepDestino(), pesoProduto);
+        Map<String, Object> freteInfo = calcularFrete(solicitacao.getCepOrigem(), solicitacao.getCepDestino(), comparaPesoCubadoPesoReal(pesoCubado, pesoProduto));
 
         //Dou cast de Object para Number para poder transformar em double
         double distancia = ((Number) freteInfo.get("distanciaKm")).intValue();
@@ -242,4 +249,30 @@ public class SolicitacaoService {
 
         return resultado;
     }
+    
+	public double calculaPesoCubado(double comprimento, double largura, double altura, double fatorCubagem) {
+		double volume = comprimento * largura * altura;
+		double pesoCubado = volume * fatorCubagem;
+		return pesoCubado;
+	}
+	
+	public double comparaPesoCubadoPesoReal(double pesoCubado, double pesoReal) {
+		double maiorPeso;
+		if (pesoCubado > pesoReal) {
+			maiorPeso = pesoCubado;
+		} else {
+			maiorPeso = pesoReal;
+		}
+		return maiorPeso;
+	}
+	
+	public boolean verificaTamanhoCaixa(double pesoProduto, double limitePesoCaixa) {
+		boolean compativel;
+		if (pesoProduto > limitePesoCaixa) {
+			compativel = false;
+		} else {
+			compativel = true;
+		}
+		return compativel;
+	}
 }

@@ -1,5 +1,7 @@
 package com.example.frota.caminhao;
 
+import org.hibernate.annotations.Formula;
+
 import com.example.frota.marca.Marca;
 
 import jakarta.persistence.Column;
@@ -43,6 +45,7 @@ public class Caminhao {
 	private double altura;
 	@Transient
 	private final double fatorCubagem = 300.0;
+	@Formula("CAST((comprimento * largura * altura) * 300.0 AS DECIMAL(10, 2))")
 	private double metragemCubica;
 
 	public Caminhao(CadastroCaminhao dados, Marca marca) {
@@ -54,7 +57,6 @@ public class Caminhao {
 		this.comprimento = dados.comprimento();
 		this.largura = dados.largura();
 		this.altura = dados.altura();
-		this.metragemCubica = dados.metragemCubica();
 	}
 	public Caminhao(AtualizacaoCaminhao dados, Marca marca) {
 		this.modelo = dados.modelo();
@@ -65,7 +67,6 @@ public class Caminhao {
 		this.comprimento = dados.comprimento();
 		this.largura = dados.largura();
 		this.altura = dados.altura();
-		this.metragemCubica = dados.metragemCubica();
 	}
 	
 	public void atualizarInformacoes(AtualizacaoCaminhao dados, Marca marca) {
@@ -85,8 +86,6 @@ public class Caminhao {
 			this.largura = dados.largura();
 		if(dados.altura() != 0)
 			this.altura = dados.altura();
-		if(dados.metragemCubica() != 0)
-			this.metragemCubica = dados.metragemCubica();
 	}
 	
 }

@@ -111,7 +111,7 @@ public class SolicitacaoController {
 	    } catch (Exception e) {
             throw new RuntimeException(e);
         }
-    }
+	}
 	
 	@GetMapping("/delete/{id}")
 	@Transactional
@@ -124,6 +124,5 @@ public class SolicitacaoController {
 		}
 		return "redirect:/solicitacao";
 	}
-	
 	
 }
