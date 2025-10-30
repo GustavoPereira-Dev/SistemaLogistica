@@ -58,7 +58,7 @@ public class SolicitacaoController {
         }
         model.addAttribute("solicitacao", dto);
         model.addAttribute("caixas", caixaService.procurarTodos());
-        model.addAttribute("produtos", produtoService.procurarTodos());
+        model.addAttribute("produtos", produtoService.procurarProdutosSemSolicitacao());
         model.addAttribute("caminhoes", caminhaoService.procurarTodos());
         return "solicitacao/formulario";
     }

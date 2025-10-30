@@ -16,7 +16,9 @@ public class ProdutoService {
 
 	public Produto save(Produto produto) {
 		return produtoRepository.save(produto);
-	} 
+	}
+
+    public List<Produto> procurarProdutosSemSolicitacao(){return produtoRepository.procurarProdutosSemSolicitacao();}
 
 	public List<Produto> procurarTodos() {
 		return produtoRepository.findAll(Sort.by("nome").ascending());
