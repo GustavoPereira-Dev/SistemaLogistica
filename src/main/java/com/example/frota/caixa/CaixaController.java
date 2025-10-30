@@ -23,7 +23,6 @@ public class CaixaController {
 	
 	@GetMapping
 	public String carregaPaginaFormulario (Model model){ 
-		//devolver DTO
 		model.addAttribute("lista", caixaService.procurarTodos());
 	    return "caixa/listagem";              
 	} 

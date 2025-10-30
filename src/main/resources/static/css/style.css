@@ -16,6 +16,18 @@ body {
     color: var(--text-dark);
 }
 
+.submit-icon-button {
+            background-color: transparent; /* Remove o fundo */
+            border: none;                 /* Remove a borda */
+            padding: 0;                   /* Remove o padding */
+            margin: 0;                    /* Remove a margem */
+            cursor: pointer;              /* Mantém o cursor de clique */
+            
+            /* Opcional: Alinha o ícone, caso haja texto ao lado */
+            vertical-align: middle;
+        }
+ 
+
 /* Navbar */
 .navbar-custom {
     background-color: var(--primary-color) !important;

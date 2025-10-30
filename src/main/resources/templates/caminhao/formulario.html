@@ -73,6 +73,7 @@
 				<label for="placa"> Carga Maxima: </label> <input
 					class="form-control" type="number"
 					th:field="*{cargaMaxima}"
+					step="0.01"
 					th:classappend="${#fields.hasErrors('cargaMaxima')} ? 'is-invalid'">
                 <div th:errors="*{cargaMaxima}" class="invalid-feedback"></div>
 			</div>
@@ -80,6 +81,7 @@
 				<label for="placa"> Comprimento: </label> <input
 					class="form-control" type="number"
 					th:field="*{comprimento}"
+					step="0.01"
 					th:classappend="${#fields.hasErrors('comprimento')} ? 'is-invalid'">
                 <div th:errors="*{comprimento}" class="invalid-feedback"></div>
 			</div>
@@ -87,20 +89,14 @@
 				<label for="placa"> Largura: </label> <input
 					class="form-control" type="number"
 					th:field="*{largura}"
+					step="0.01"
 					th:classappend="${#fields.hasErrors('largura')} ? 'is-invalid'">
                 <div th:errors="*{largura}" class="invalid-feedback"></div>
-			</div>
-			<div class="form-group">
-				<label for="placa"> Metragem Cubica: </label> <input
-					class="form-control" type="number"
-					th:field="*{metragemCubica}"
-					th:classappend="${#fields.hasErrors('metragemCubica')} ? 'is-invalid'">
-                <div th:errors="*{metragemCubica}" class="invalid-feedback"></div>
 			</div>
 			<button type="submit" class="btn btn-primary">
                 <span th:text="${caminhao.id != null} ? 'Atualizar' : 'Cadastrar'"></span>
             </button>
-             <a th:href="@{/caminhoes}" class="btn btn-secondary">Cancelar</a>
+             <a th:href="@{/caminhao}" class="btn btn-secondary">Cancelar</a>
 		</form>
 	</div>
 	<div th:replace="~{fragmentos/footer :: footer}"></div>

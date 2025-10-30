@@ -32,7 +32,7 @@ public class CaminhaoController {
 	private MarcaService marcaService;
 	
 	@GetMapping                 
-	public String carregaPaginaFormulario ( Model model){ 
+	public String carregaPaginaListagem(Model model){ 
 		//devolver DTO
 		model.addAttribute("listaVeiculos", caminhaoService.procurarTodos());
 	    return "caminhao/listagem";              

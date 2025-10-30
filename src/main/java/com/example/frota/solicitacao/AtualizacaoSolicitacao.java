@@ -2,9 +2,7 @@ package com.example.frota.solicitacao;
 
 import java.time.LocalDateTime;
 
-import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
-import jakarta.validation.constraints.Positive;
 
 public record AtualizacaoSolicitacao(
 		
@@ -22,13 +20,9 @@ public record AtualizacaoSolicitacao(
 		String cepDestino,
 		LocalDateTime dataSolicitacao,
 		
-		// @Positive(message = "Distancia em km deve ser positiva")
 		Double distanciaKm,
-		//@Positive(message = "Custo de pedagios deve ser positivo")
 		Double custoPedagios,
-		// @Positive(message = "Peso deve ser positivo")
 		Double pesoConsideradoKg,
-		// @Positive(message = "Custo do Frete deve ser positivo")
 		Double custoFreteCalculado	
 		
 	) {
