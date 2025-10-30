@@ -50,9 +50,8 @@ public class SolicitacaoController {
     public String mostrarFormulario(@RequestParam(required = false) Long id, Model model) {
 		AtualizacaoSolicitacao dto;
         if (id != null) {
-            //edição: Carrega dados existentes
             Solicitacao solicitacao = solicitacaoService.procurarPorId(id)
-                .orElseThrow(() -> new EntityNotFoundException("Caminhão não encontrado"));
+                .orElseThrow(() -> new EntityNotFoundException("Solicitação não encontrado"));
             dto = solicitacaoMapper.toAtualizacaoDto(solicitacao);
         } else {
             dto = new AtualizacaoSolicitacao(null, null, null, null, null, null, null, null, null, null, null);
@@ -75,7 +74,7 @@ public class SolicitacaoController {
 	        
 			if(id != null) {
 				Solicitacao solicitacao = solicitacaoService.procurarPorId(id)
-						.orElseThrow(() -> new EntityNotFoundException("Caminhao não encontrado"));
+						.orElseThrow(() -> new EntityNotFoundException("Solicitação não encontrada"));
 				model.addAttribute("solicitacoes", solicitacaoService.procurarTodos());
 
 				dto = solicitacaoMapper.toAtualizacaoDto(solicitacao);
@@ -85,7 +84,9 @@ public class SolicitacaoController {
 		} catch (EntityNotFoundException e) {
 			redirectAttributes.addFlashAttribute("error", e.getMessage());
 			return "redirect:/solicitacao";
-		}
+		} catch (Exception e) {
+            throw new RuntimeException(e);
+        }
 	}
 	
 
@@ -101,8 +102,8 @@ public class SolicitacaoController {
 	    try {
 	        Solicitacao solicitacaoSalva = solicitacaoService.salvarOuAtualizar(dto);
 	        String mensagem = dto.id() != null 
-	            ? "Caminhão '" + solicitacaoSalva.getId() + "' atualizado com sucesso!"
-	            : "Caminhão '" + solicitacaoSalva.getId() + "' criado com sucesso!";
+	            ? "Solicitação atualizada com sucesso!"
+	            : "Solicitação criada com sucesso!";
 	        redirectAttributes.addFlashAttribute("message", mensagem);
 	        return "redirect:/solicitacao";
 	    } catch (EntityNotFoundException e) {
@@ -118,7 +119,7 @@ public class SolicitacaoController {
 	public String deleteTutorial(@PathVariable("id") Long id, Model model, RedirectAttributes redirectAttributes) {
 		try {
 			solicitacaoService.apagarPorId(id);
-			redirectAttributes.addFlashAttribute("message", "O caminhao " + id + " foi apagado!");
+			redirectAttributes.addFlashAttribute("message", "A solicitação " + id + " foi apagada!");
 		} catch (Exception e) {
 			redirectAttributes.addFlashAttribute("message", e.getMessage());
 		}
