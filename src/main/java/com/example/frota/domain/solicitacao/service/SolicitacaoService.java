@@ -5,6 +5,7 @@ import com.example.frota.domain.caixa.model.Caixa;
 import com.example.frota.domain.caixa.service.CaixaService;
 import com.example.frota.domain.caminhao.model.Caminhao;
 import com.example.frota.domain.caminhao.service.CaminhaoService;
+import com.example.frota.domain.motorista.model.Motorista;
 import com.example.frota.domain.produto.model.Produto;
 import com.example.frota.domain.produto.service.ProdutoService;
 import com.example.frota.domain.solicitacao.model.Solicitacao;
@@ -77,6 +78,10 @@ public class SolicitacaoService {
             return criarSolicitacao(novaSolicitacao, caixa, produto, caminhao);
         }
     }
+    
+	public Optional<Solicitacao> buscar(long id) {
+		return solicitacaoRepository.findById(id);
+	}
 
     private Solicitacao criarSolicitacao(Solicitacao solicitacao, Caixa caixa, Produto produto, Caminhao caminhao) throws Exception {
         solicitacao.setCaixa(caixa);
