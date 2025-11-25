@@ -18,21 +18,21 @@ public interface ViagemMapper {
     // Converte Entity para DTO (para preencher formulário de edição)
     @Mapping(target = "caminhaoId", source = "caminhao.id")
     @Mapping(target = "motoristaId", source = "motorista.id")
-    @Mapping(target = "solicitacaoId", source = "solicitacao.id")
-    AtualizacaoCaminhao toAtualizacaoDto(Viagem viagem);
+    //@Mapping(target = "entregas", source = "solicitacao.id")
+    AtualizacaoViagem toAtualizacaoDto(Viagem viagem);
     
     // Converte DTO para Entity (para criação NOVA - ignora ID)
     @Mapping(target = "id", ignore = true)
     @Mapping(target = "caminhao", source = "caminhaoId", qualifiedByName = "idToCaminhao")
     @Mapping(target = "motorista", source = "motoristaId", qualifiedByName = "idToMotorista")
-    @Mapping(target = "solicitacao", source = "solicitacaoId", qualifiedByName = "idToSolicitacao")
+    //@Mapping(target = "entregas", source = "solicitacaoId", qualifiedByName = "idToSolicitacao")
     Viagem toEntityFromAtualizacao(AtualizacaoViagem dto);
     
     // Atualiza Entity existente com dados do DTO
     @Mapping(target = "id", ignore = true) // Não atualiza ID
     @Mapping(target = "caminhao", source = "caminhaoId", qualifiedByName = "idToCaminhao")
     @Mapping(target = "motorista", source = "motoristaId", qualifiedByName = "idToMotorista")
-    @Mapping(target = "solicitacao", source = "solicitacaoId", qualifiedByName = "idToSolicitacao")
+    //@Mapping(target = "entregas", source = "solicitacaoId", qualifiedByName = "idToSolicitacao")
     void updateEntityFromDto(AtualizacaoViagem dto, @MappingTarget Viagem caminhao);
     
     // Método para converter marcaId em objeto Marca

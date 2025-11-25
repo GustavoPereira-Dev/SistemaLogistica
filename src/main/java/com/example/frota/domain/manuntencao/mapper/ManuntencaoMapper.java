@@ -5,17 +5,17 @@ import org.mapstruct.Mapping;
 import org.mapstruct.MappingTarget;
 import org.mapstruct.Named;
 
-import com.example.frota.application.dto.caminhao.AtualizacaoCaminhao;
 import com.example.frota.application.dto.manuntencao.AtualizacaoManuntencao;
 import com.example.frota.domain.caminhao.model.Caminhao;
 import com.example.frota.domain.manuntencao.model.Manuntencao;
+
 
 @Mapper(componentModel = "spring")
 public interface ManuntencaoMapper {
     
     // Converte Entity para DTO (para preencher formulário de edição)
     @Mapping(target = "caminhaoId", source = "caminhao.id")
-    AtualizacaoCaminhao toAtualizacaoDto(Caminhao caminhao);
+    AtualizacaoManuntencao toAtualizacaoDto(Manuntencao caminhao);
     
     // Converte DTO para Entity (para criação NOVA - ignora ID)
     @Mapping(target = "id", ignore = true)
