@@ -20,7 +20,7 @@ import org.springframework.web.bind.annotation.RequestParam;
 
 import com.example.frota.api.annotations.PublicRoute;
 import com.example.frota.application.dto.manutencao.AtualizacaoManutencao;
-import com.example.frota.domain.manuntencao.mapper.ManuntencaoMapper;
+import com.example.frota.domain.manuntencao.mapper.ManutencaoMapper;
 import com.example.frota.domain.manutencao.model.Manutencao;
 import com.example.frota.domain.manutencao.service.ManutencaoService;
 
@@ -36,7 +36,7 @@ public class ManutencaoController {
 	private ManutencaoService manutencaoService;
 	
 	@Autowired
-	private ManuntencaoMapper manutencaoMapper;
+	private ManutencaoMapper manutencaoMapper;
 	
 	@PublicRoute
     @GetMapping
@@ -101,3 +101,4 @@ public class ManutencaoController {
         }
     }
 }
+
