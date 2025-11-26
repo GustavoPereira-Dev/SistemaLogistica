@@ -4,29 +4,39 @@ import com.example.frota.application.dto.solicitacao.AtualizacaoSolicitacao;
 import com.example.frota.domain.solicitacao.model.Solicitacao;
 import com.example.frota.domain.solicitacao.mapper.SolicitacaoMapper;
 import com.example.frota.domain.solicitacao.service.SolicitacaoService;
+
+import java.util.List;
+import java.util.Set;
+import java.util.stream.Collectors;
+
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.stereotype.Controller;
-import org.springframework.ui.Model;
-import org.springframework.validation.BindingResult;
+import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.annotation.CrossOrigin;
+import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.ModelAttribute;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.PutMapping;
+import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RequestHeader;
 import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RequestParam;
-import org.springframework.web.servlet.mvc.support.RedirectAttributes;
-
-import com.example.frota.domain.caixa.service.CaixaService;
-import com.example.frota.domain.caminhao.service.CaminhaoService;
-import com.example.frota.domain.produto.service.ProdutoService;
+import org.springframework.web.bind.annotation.RestController;
 
 import jakarta.persistence.EntityNotFoundException;
 import jakarta.transaction.Transactional;
 import jakarta.validation.Valid;
 
-@Controller
+@RestController
 @RequestMapping("/solicitacao")
+@CrossOrigin("*")
 public class SolicitacaoController {
+	
+	private final Set<String> CHAVES_VALIDAS = Set.of(
+            "cco123",
+            "azul123",
+            "frota-secret-key"
+    );
 	
 	@Autowired
 	private SolicitacaoService solicitacaoService;
@@ -34,100 +44,71 @@ public class SolicitacaoController {
 	@Autowired
     private SolicitacaoMapper solicitacaoMapper;
 	
-	@Autowired
-	private CaixaService caixaService;
-	
-	@Autowired
-	private ProdutoService produtoService;
-	
-	@Autowired
-	private CaminhaoService caminhaoService;
-	
-	@GetMapping                 
-	public String carregaPaginaFormulario ( Model model){ 
-		//devolver DTO
-		model.addAttribute("lista", solicitacaoService.procurarTodos());
-	    return "solicitacao/listagem";              
-	} 
-	
-	@GetMapping("/formulario")
-    public String mostrarFormulario(@RequestParam(required = false) Long id, Model model) {
-		AtualizacaoSolicitacao dto;
-        if (id != null) {
-            Solicitacao solicitacao = solicitacaoService.procurarPorId(id)
-                .orElseThrow(() -> new EntityNotFoundException("Solicitação não encontrado"));
-            dto = solicitacaoMapper.toAtualizacaoDto(solicitacao);
-        } else {
-            dto = new AtualizacaoSolicitacao(null, null, null, null, null, null, null, null, null, null, null);
-        }
-        model.addAttribute("solicitacao", dto);
-        model.addAttribute("caixas", caixaService.procurarTodos());
-        model.addAttribute("produtos", produtoService.procurarProdutosSemSolicitacao());
-        model.addAttribute("caminhoes", caminhaoService.procurarTodos());
-        return "solicitacao/formulario";
+	@GetMapping
+    public ResponseEntity<List<AtualizacaoSolicitacao>> listarTodos() {
+        List<Solicitacao> solicitacoes = solicitacaoService.procurarTodos();
+        List<AtualizacaoSolicitacao> dtos = solicitacoes.stream()
+                .map(solicitacaoMapper::toAtualizacaoDto)
+                .collect(Collectors.toList());
+        return ResponseEntity.ok(dtos);
+    }
+
+    @GetMapping("/{id}")
+    public ResponseEntity<AtualizacaoSolicitacao> buscarPorId(@PathVariable Long id) {
+        return solicitacaoService.procurarPorId(id)
+                .map(solicitacaoMapper::toAtualizacaoDto)
+                .map(ResponseEntity::ok)
+                .orElse(ResponseEntity.notFound().build());
     }
 	
-	@GetMapping ("/formulario/{id}")    
-	public String carregaPaginaFormulario (@PathVariable("id") Long id, Model model,
-			RedirectAttributes redirectAttributes) {
-		AtualizacaoSolicitacao dto;
-		try {
-	        model.addAttribute("caixas", caixaService.procurarTodos());
-	        model.addAttribute("produtos", produtoService.procurarTodos());
-	        model.addAttribute("caminhoes", caminhaoService.procurarTodos());
-	        
-			if(id != null) {
-				Solicitacao solicitacao = solicitacaoService.procurarPorId(id)
-						.orElseThrow(() -> new EntityNotFoundException("Solicitação não encontrada"));
-				model.addAttribute("solicitacoes", solicitacaoService.procurarTodos());
+	@PostMapping
+    @Transactional
+    public ResponseEntity<?> criar(
+            @RequestHeader("X-API-KEY") String apiKey,
+            @RequestBody @Valid AtualizacaoSolicitacao dto) throws Exception {
 
-				dto = solicitacaoMapper.toAtualizacaoDto(solicitacao);
-				model.addAttribute("solicitacao", dto);
-			}
-			return "solicitacao/formulario";
-		} catch (EntityNotFoundException e) {
-			redirectAttributes.addFlashAttribute("error", e.getMessage());
-			return "redirect:/solicitacao";
-		} catch (Exception e) {
-            throw new RuntimeException(e);
+        if (!CHAVES_VALIDAS.contains(apiKey)) {
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
+                    .body("{\"erro\":\"Chave API inválida\"}");
         }
-	}
-	
 
-	@PostMapping("/salvar")
-    public String salvar(@ModelAttribute("solicitacao") @Valid AtualizacaoSolicitacao dto,
-                        BindingResult result,
-                        RedirectAttributes redirectAttributes,
-                        Model model) {
-		if (result.hasErrors()) {
-	        model.addAttribute("solicitacoes", solicitacaoService.procurarTodos());
-	        return "solicitacao/formulario";
-	    }
-	    try {
-	        Solicitacao solicitacaoSalva = solicitacaoService.salvarOuAtualizar(dto);
-	        String mensagem = dto.id() != null 
-	            ? "Solicitação atualizada com sucesso!"
-	            : "Solicitação criada com sucesso!";
-	        redirectAttributes.addFlashAttribute("message", mensagem);
-	        return "redirect:/solicitacao";
-	    } catch (EntityNotFoundException e) {
-	        redirectAttributes.addFlashAttribute("error", e.getMessage());
-	        return "redirect:/solicitacao/formulario" + (dto.id() != null ? "?id=" + dto.id() : "");
-	    } catch (Exception e) {
-            throw new RuntimeException(e);
+        try {
+            Solicitacao solicitacaoSalva = solicitacaoService.salvarOuAtualizar(dto);
+            AtualizacaoSolicitacao dtoSalvo = solicitacaoMapper.toAtualizacaoDto(solicitacaoSalva);
+            
+            return ResponseEntity.status(HttpStatus.CREATED).body(dtoSalvo);
+        } catch (EntityNotFoundException e) {
+            return ResponseEntity.badRequest().body("{\"erro\":\"Solicitação não encontrada\"}");
         }
-	}
+    }
 	
-	@GetMapping("/delete/{id}")
-	@Transactional
-	public String deleteTutorial(@PathVariable("id") Long id, Model model, RedirectAttributes redirectAttributes) {
-		try {
-			solicitacaoService.apagarPorId(id);
-			redirectAttributes.addFlashAttribute("message", "A solicitação " + id + " foi apagada!");
-		} catch (Exception e) {
-			redirectAttributes.addFlashAttribute("message", e.getMessage());
-		}
-		return "redirect:/solicitacao";
-	}
+	@PutMapping
+    @Transactional
+    public ResponseEntity<AtualizacaoSolicitacao> atualizar(@RequestBody @Valid AtualizacaoSolicitacao dto) throws Exception {
+        if (dto.id() == null) {
+            return ResponseEntity.badRequest().build(); 
+        }
+        try {
+            Solicitacao solicitacaoSalva = solicitacaoService.salvarOuAtualizar(dto);
+            AtualizacaoSolicitacao dtoSalvo = solicitacaoMapper.toAtualizacaoDto(solicitacaoSalva);
+            return ResponseEntity.ok(dtoSalvo);
+        } catch (EntityNotFoundException e) {
+            return ResponseEntity.notFound().build();
+        }
+    }
+	
+	@DeleteMapping("/{id}")
+    @Transactional
+    public ResponseEntity<Void> excluir(@PathVariable Long id) {
+        try {
+            if (solicitacaoService.procurarPorId(id).isEmpty()) {
+                return ResponseEntity.notFound().build();
+            }
+            solicitacaoService.apagarPorId(id);
+            return ResponseEntity.noContent().build();
+        } catch (Exception e) {
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
+        }
+    }
 	
 }

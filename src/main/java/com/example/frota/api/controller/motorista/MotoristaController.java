@@ -1,13 +1,12 @@
 package com.example.frota.api.controller.motorista;
 
-import java.util.List;
-import java.util.stream.Collectors;
+import java.util.Set;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
-import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
+import org.springframework.web.bind.annotation.CrossOrigin;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -17,8 +16,8 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestHeader;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
+import org.springframework.web.bind.annotation.RestController;
 
-import com.example.frota.api.annotations.PublicRoute;
 import com.example.frota.application.dto.motorista.AtualizacaoMotorista;
 import com.example.frota.domain.motorista.model.Motorista;
 import com.example.frota.domain.motorista.service.MotoristaService;
@@ -27,47 +26,52 @@ import jakarta.persistence.EntityNotFoundException;
 import jakarta.transaction.Transactional;
 import jakarta.validation.Valid;
 
-@Controller
+@RestController
 @RequestMapping("/motorista")
+@CrossOrigin("*")
 public class MotoristaController {
+	
+	private final Set<String> CHAVES_VALIDAS = Set.of(
+            "cco123",
+            "azul123",
+            "frota-secret-key"
+    );
 	
 	@Autowired
 	private MotoristaService motoristaService;
 	
-	@Autowired
-	private MotoristaMapper motoristaMapper;
-	
-	@PublicRoute
-    @GetMapping
-    public ResponseEntity<List<AtualizacaoMotorista>> listarTodos() {
-        List<Motorista> manutencoes = motoristaService.procurarTodos();
-        List<AtualizacaoMotorista> dtos = manutencoes.stream()
-                .map(motoristaMapper::toAtualizacaoDto)
-                .collect(Collectors.toList());
-        return ResponseEntity.ok(dtos);
+	@GetMapping
+    public String carregarPaginaListagem(Model model) {
+        model.addAttribute("listaTipos", motoristaService.procurarTodos());
+        return "/motorista";
     }
 	
-	@PublicRoute
-    @GetMapping("/{id}")
-    public ResponseEntity<AtualizacaoMotorista> buscarPorId(@PathVariable Long id) {
-        return motoristaService.procurarPorId(id)
-                .map(motoristaMapper::toAtualizacaoDto)
-                .map(ResponseEntity::ok)
-                .orElse(ResponseEntity.notFound().build());
+	@GetMapping("/{id}")
+    public String mostrarFormulario(@RequestParam(required = false) Long id, Model model) {
+		if(id != null) {
+			Motorista motorista = motoristaService.procurarPorId(id)
+					.orElseThrow(() -> new EntityNotFoundException("Motorista não encontrado"));
+			model.addAttribute("motorista", motorista);
+		}
+		return "/motorista";       
     }
 	
 	@PostMapping
     @Transactional
     public ResponseEntity<?> criar(
-            @RequestBody @Valid AtualizacaoMotorista dto) {
+    		@RequestHeader("X-API-KEY") String apiKey,
+            @RequestBody @Valid AtualizacaoMotorista dto) throws Exception {
+
+        if (!CHAVES_VALIDAS.contains(apiKey)) {
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
+                    .body("{\"erro\":\"Chave API inválida\"}");
+        }
 
         try {
-            Motorista motoristaSalvo = motoristaService.salvarOuAtualizar(dto);
-            AtualizacaoMotorista dtoSalvo = motoristaMapper.toAtualizacaoDto(motoristaSalvo);
-
-            return ResponseEntity.status(HttpStatus.CREATED).body(dtoSalvo);
+            motoristaService.save(new Motorista(dto));
+            return ResponseEntity.status(HttpStatus.CREATED).body(dto);
         } catch (EntityNotFoundException e) {
-            return ResponseEntity.badRequest().body("{\"erro\":\"Caminhão não encontrado\"}");
+            return ResponseEntity.badRequest().body("{\"erro\":\"Motorista não encontrado\"}");
         }
     }
 
@@ -78,9 +82,8 @@ public class MotoristaController {
             return ResponseEntity.badRequest().build();
         }
         try {
-            Motorista motoristaSalvo = motoristaService.salvarOuAtualizar(dto);
-            AtualizacaoMotorista dtoSalvo = motoristaMapper.toAtualizacaoDto(motoristaSalvo);
-            return ResponseEntity.ok(dtoSalvo);
+        	motoristaService.atualizarMotorista(dto);
+            return ResponseEntity.ok(dto);
         } catch (EntityNotFoundException e) {
             return ResponseEntity.notFound().build();
         }

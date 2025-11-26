@@ -1,6 +1,5 @@
 package com.example.frota.api.controller.caminhao;
 
-import com.example.frota.api.annotations.PublicRoute;
 import com.example.frota.application.dto.caminhao.AtualizacaoCaminhao;
 import com.example.frota.domain.caminhao.mapper.CaminhaoMapper;
 import com.example.frota.domain.caminhao.model.Caminhao;
@@ -44,7 +43,6 @@ public class CaminhaoController {
     @Autowired
     private CaminhaoMapper caminhaoMapper;
 
-    @PublicRoute
     @GetMapping
     public ResponseEntity<List<AtualizacaoCaminhao>> listarTodos() {
         List<Caminhao> caminhoes = caminhaoService.procurarTodos();
@@ -54,7 +52,6 @@ public class CaminhaoController {
         return ResponseEntity.ok(dtos);
     }
 
-    @PublicRoute
     @GetMapping("/{id}")
     public ResponseEntity<AtualizacaoCaminhao> buscarPorId(@PathVariable Long id) {
         return caminhaoService.procurarPorId(id)
@@ -69,10 +66,15 @@ public class CaminhaoController {
             @RequestHeader("X-API-KEY") String apiKey,
             @RequestBody @Valid AtualizacaoCaminhao dto) {
 
+        if (!CHAVES_VALIDAS.contains(apiKey)) {
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
+                    .body("{\"erro\":\"Chave API inválida\"}");
+        }
+
         try {
             Caminhao caminhaoSalvo = caminhaoService.salvarOuAtualizar(dto);
             AtualizacaoCaminhao dtoSalvo = caminhaoMapper.toAtualizacaoDto(caminhaoSalvo);
-
+            
             return ResponseEntity.status(HttpStatus.CREATED).body(dtoSalvo);
         } catch (EntityNotFoundException e) {
             return ResponseEntity.badRequest().body("{\"erro\":\"Marca não encontrada\"}");
@@ -83,7 +85,7 @@ public class CaminhaoController {
     @Transactional
     public ResponseEntity<AtualizacaoCaminhao> atualizar(@RequestBody @Valid AtualizacaoCaminhao dto) {
         if (dto.id() == null) {
-            return ResponseEntity.badRequest().build();
+            return ResponseEntity.badRequest().build(); 
         }
         try {
             Caminhao caminhaoSalvo = caminhaoService.salvarOuAtualizar(dto);

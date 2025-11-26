@@ -1,6 +1,7 @@
 package com.example.frota.api.controller.viagem;
 
 import java.util.List;
+import java.util.Set;
 import java.util.stream.Collectors;
 
 import org.springframework.beans.factory.annotation.Autowired;
@@ -8,6 +9,7 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
+import org.springframework.web.bind.annotation.CrossOrigin;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -17,6 +19,7 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestHeader;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
+import org.springframework.web.bind.annotation.RestController;
 
 import com.example.frota.api.annotations.PublicRoute;
 import com.example.frota.application.dto.viagem.AtualizacaoViagem;
@@ -28,9 +31,16 @@ import jakarta.persistence.EntityNotFoundException;
 import jakarta.transaction.Transactional;
 import jakarta.validation.Valid;
 
-@Controller
+@RestController
 @RequestMapping("/viagem")
+@CrossOrigin("*")
 public class ViagemController {
+	
+	private final Set<String> CHAVES_VALIDAS = Set.of(
+            "cco123",
+            "azul123",
+            "frota-secret-key"
+    );
 	
 	@Autowired
 	private ViagemService viagemService;
@@ -38,8 +48,7 @@ public class ViagemController {
 	@Autowired
 	private ViagemMapper viagemMapper;
 	
-	@PublicRoute
-    @GetMapping
+	@GetMapping
     public ResponseEntity<List<AtualizacaoViagem>> listarTodos() {
         List<Viagem> viagens = viagemService.procurarTodos();
         List<AtualizacaoViagem> dtos = viagens.stream()
@@ -47,8 +56,7 @@ public class ViagemController {
                 .collect(Collectors.toList());
         return ResponseEntity.ok(dtos);
     }
-	
-	@PublicRoute
+
     @GetMapping("/{id}")
     public ResponseEntity<AtualizacaoViagem> buscarPorId(@PathVariable Long id) {
         return viagemService.procurarPorId(id)
@@ -56,16 +64,22 @@ public class ViagemController {
                 .map(ResponseEntity::ok)
                 .orElse(ResponseEntity.notFound().build());
     }
-	
-	@PostMapping
+
+    @PostMapping
     @Transactional
     public ResponseEntity<?> criar(
+            @RequestHeader("X-API-KEY") String apiKey,
             @RequestBody @Valid AtualizacaoViagem dto) {
 
-        try {
-            Viagem viagemSalvo = viagemService.salvarOuAtualizar(dto);
-            AtualizacaoViagem dtoSalvo = viagemMapper.toAtualizacaoDto(viagemSalvo);
+        if (!CHAVES_VALIDAS.contains(apiKey)) {
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
+                    .body("{\"erro\":\"Chave API inválida\"}");
+        }
 
+        try {
+            Viagem viagemSalva = viagemService.salvarOuAtualizar(dto);
+            AtualizacaoViagem dtoSalvo = viagemMapper.toAtualizacaoDto(viagemSalva);
+            
             return ResponseEntity.status(HttpStatus.CREATED).body(dtoSalvo);
         } catch (EntityNotFoundException e) {
             return ResponseEntity.badRequest().body("{\"erro\":\"Caminhão não encontrado\"}");
@@ -76,11 +90,11 @@ public class ViagemController {
     @Transactional
     public ResponseEntity<AtualizacaoViagem> atualizar(@RequestBody @Valid AtualizacaoViagem dto) {
         if (dto.id() == null) {
-            return ResponseEntity.badRequest().build();
+            return ResponseEntity.badRequest().build(); 
         }
         try {
-            Viagem viagemSalvo = viagemService.salvarOuAtualizar(dto);
-            AtualizacaoViagem dtoSalvo = viagemMapper.toAtualizacaoDto(viagemSalvo);
+            Viagem viagemSalva = viagemService.salvarOuAtualizar(dto);
+            AtualizacaoViagem dtoSalvo = viagemMapper.toAtualizacaoDto(viagemSalva);
             return ResponseEntity.ok(dtoSalvo);
         } catch (EntityNotFoundException e) {
             return ResponseEntity.notFound().build();

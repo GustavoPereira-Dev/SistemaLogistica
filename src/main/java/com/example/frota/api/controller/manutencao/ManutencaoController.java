@@ -1,13 +1,13 @@
 package com.example.frota.api.controller.manutencao;
 
 import java.util.List;
+import java.util.Set;
 import java.util.stream.Collectors;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
-import org.springframework.stereotype.Controller;
-import org.springframework.ui.Model;
+import org.springframework.web.bind.annotation.CrossOrigin;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -16,11 +16,10 @@ import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestHeader;
 import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RequestParam;
+import org.springframework.web.bind.annotation.RestController;
 
-import com.example.frota.api.annotations.PublicRoute;
 import com.example.frota.application.dto.manutencao.AtualizacaoManutencao;
-import com.example.frota.domain.manuntencao.mapper.ManutencaoMapper;
+import com.example.frota.domain.manutencao.mapper.ManutencaoMapper;
 import com.example.frota.domain.manutencao.model.Manutencao;
 import com.example.frota.domain.manutencao.service.ManutencaoService;
 
@@ -28,17 +27,23 @@ import jakarta.persistence.EntityNotFoundException;
 import jakarta.transaction.Transactional;
 import jakarta.validation.Valid;
 
-@Controller
+@RestController
 @RequestMapping("/manutencao")
+@CrossOrigin("*")
 public class ManutencaoController {
+	
+	private final Set<String> CHAVES_VALIDAS = Set.of(
+            "cco123",
+            "azul123",
+            "frota-secret-key"
+    );
 	
 	@Autowired
 	private ManutencaoService manutencaoService;
 	
 	@Autowired
 	private ManutencaoMapper manutencaoMapper;
-	
-	@PublicRoute
+
     @GetMapping
     public ResponseEntity<List<AtualizacaoManutencao>> listarTodos() {
         List<Manutencao> manutencoes = manutencaoService.procurarTodos();
@@ -48,7 +53,6 @@ public class ManutencaoController {
         return ResponseEntity.ok(dtos);
     }
 	
-	@PublicRoute
     @GetMapping("/{id}")
     public ResponseEntity<AtualizacaoManutencao> buscarPorId(@PathVariable Long id) {
         return manutencaoService.procurarPorId(id)
@@ -60,7 +64,13 @@ public class ManutencaoController {
 	@PostMapping
     @Transactional
     public ResponseEntity<?> criar(
+    		@RequestHeader("X-API-KEY") String apiKey,
             @RequestBody @Valid AtualizacaoManutencao dto) {
+
+        if (!CHAVES_VALIDAS.contains(apiKey)) {
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
+                    .body("{\"erro\":\"Chave API inválida\"}");
+        }
 
         try {
             Manutencao manutencaoSalvo = manutencaoService.salvarOuAtualizar(dto);
@@ -68,7 +78,7 @@ public class ManutencaoController {
 
             return ResponseEntity.status(HttpStatus.CREATED).body(dtoSalvo);
         } catch (EntityNotFoundException e) {
-            return ResponseEntity.badRequest().body("{\"erro\":\"Caminhão não encontrado\"}");
+            return ResponseEntity.badRequest().body("{\"erro\":\"Manutenção não encontrada\"}");
         }
     }
 
@@ -101,4 +111,3 @@ public class ManutencaoController {
         }
     }
 }
-

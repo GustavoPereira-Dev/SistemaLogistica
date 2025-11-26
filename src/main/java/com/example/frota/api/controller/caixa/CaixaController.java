@@ -2,64 +2,105 @@ package com.example.frota.api.controller.caixa;
 
 import com.example.frota.domain.caixa.service.CaixaService;
 import com.example.frota.application.dto.caixa.AtualizacaoCaixa;
-import com.example.frota.application.dto.caixa.CadastroCaixa;
 import com.example.frota.domain.caixa.model.Caixa;
+
+import java.util.Set;
+
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.stereotype.Controller;
+import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
 import org.springframework.ui.Model;
+import org.springframework.web.bind.annotation.CrossOrigin;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.PutMapping;
+import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RequestHeader;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
+import org.springframework.web.bind.annotation.RestController;
 
 import jakarta.persistence.EntityNotFoundException;
 import jakarta.transaction.Transactional;
 import jakarta.validation.Valid;
 
-@Controller
+@RestController
 @RequestMapping("/caixa")
+@CrossOrigin("*")
 public class CaixaController {
+	
+	private final Set<String> CHAVES_VALIDAS = Set.of(
+            "cco123",
+            "azul123",
+            "frota-secret-key"
+    );
 	
 	@Autowired
 	private CaixaService caixaService;
 	
 	@GetMapping
-	public String carregaPaginaFormulario (Model model){ 
-		model.addAttribute("lista", caixaService.procurarTodos());
-	    return "caixa/listagem";              
-	} 
+    public String carregarPaginaListagem(Model model) {
+        model.addAttribute("listaTipos", caixaService.procurarTodos());
+        return "/caixa";
+    }
 
-	@GetMapping ("/formulario")
+	@GetMapping("/{id}")
     public String mostrarFormulario(@RequestParam(required = false) Long id, Model model) {
 		if(id != null) {
 			Caixa caixa = caixaService.procurarPorId(id)
 					.orElseThrow(() -> new EntityNotFoundException("Caixa não encontrada"));
 			model.addAttribute("caixa", caixa);
 		}
-		return "caixa/formulario";       
+		return "/caixa";       
     }
 	
-	@DeleteMapping
-	@Transactional
-	public String excluir (Long id) {
-		caixaService.apagarPorId(id);
-		return "redirect:caixa";
-	}
-	
 	@PostMapping
-	@Transactional
-	public String cadastrar (@Valid CadastroCaixa dados) {
-		caixaService.save(new Caixa(dados));
-		return "redirect:caixa";
-	}
+    @Transactional
+    public ResponseEntity<?> criar(
+    		@RequestHeader("X-API-KEY") String apiKey,
+            @RequestBody @Valid AtualizacaoCaixa dto) throws Exception {
+
+        if (!CHAVES_VALIDAS.contains(apiKey)) {
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
+                    .body("{\"erro\":\"Chave API inválida\"}");
+        }
+
+        try {
+            caixaService.save(new Caixa(dto));
+            return ResponseEntity.status(HttpStatus.CREATED).body(dto);
+        } catch (EntityNotFoundException e) {
+            return ResponseEntity.badRequest().body("{\"erro\":\"Caixa não encontrado\"}");
+        }
+    }
 	
 	@PutMapping
-	@Transactional
-	public String atualizar (AtualizacaoCaixa dados) {
-		caixaService.atualizarCaixa(dados);
-		return "redirect:caixa";
-	}
+    @Transactional
+    public ResponseEntity<AtualizacaoCaixa> atualizar(@RequestBody @Valid AtualizacaoCaixa dto) {
+        if (dto.id() == null) {
+            return ResponseEntity.badRequest().build();
+        }
+        try {
+        	caixaService.atualizarCaixa(dto);
+            return ResponseEntity.ok(dto);
+        } catch (EntityNotFoundException e) {
+            return ResponseEntity.notFound().build();
+        }
+    }
+
+    @DeleteMapping("/{id}")
+    @Transactional
+    public ResponseEntity<Void> excluir(@PathVariable Long id) {
+        try {
+            if (caixaService.procurarPorId(id).isEmpty()) {
+                return ResponseEntity.notFound().build();
+            }
+            caixaService.apagarPorId(id);
+            return ResponseEntity.noContent().build();
+        } catch (Exception e) {
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
+        }
+    }
 
 }
