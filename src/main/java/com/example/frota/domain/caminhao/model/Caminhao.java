@@ -47,8 +47,10 @@ public class Caminhao {
 	private double altura;
 	@Transient
 	private final double fatorCubagem = 300.0;
+
 	@Formula("CAST((comprimento * largura * altura) * 300.0 AS DECIMAL(10, 2))")
-	private double metragemCubica;
+	@Column(name = "metragem_cubica")
+    private double metragemCubica;
 
 	public Caminhao(CadastroCaminhao dados, Marca marca) {
 		this.modelo = dados.modelo();
