@@ -3,8 +3,9 @@ package com.example.frota.application.dto.caixa;
 import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Positive;
 
-public record AtualizacaoCaixa(Long id,
-		
+public record AtualizacaoCaixa(
+        Long id,
+
 		@NotNull(message = "Altura é obrigatória")
 	    @Positive(message = "Altura deve ser positiva")
 	    Double altura,

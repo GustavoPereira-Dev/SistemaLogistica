@@ -1,15 +1,16 @@
 package com.example.frota.api.controller.caixa;
 
+import com.example.frota.domain.caixa.mapper.CaixaMapper;
 import com.example.frota.domain.caixa.service.CaixaService;
 import com.example.frota.application.dto.caixa.AtualizacaoCaixa;
 import com.example.frota.domain.caixa.model.Caixa;
 
-import java.util.Set;
+import java.util.List;
+import java.util.stream.Collectors;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
-import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.CrossOrigin;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -17,9 +18,7 @@ import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
-import org.springframework.web.bind.annotation.RequestHeader;
 import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 import jakarta.persistence.EntityNotFoundException;
@@ -30,59 +29,53 @@ import jakarta.validation.Valid;
 @RequestMapping("/caixa")
 @CrossOrigin("*")
 public class CaixaController {
-	
-	private final Set<String> CHAVES_VALIDAS = Set.of(
-            "cco123",
-            "azul123",
-            "frota-secret-key"
-    );
-	
-	@Autowired
-	private CaixaService caixaService;
-	
-	@GetMapping
-    public String carregarPaginaListagem(Model model) {
-        model.addAttribute("listaTipos", caixaService.procurarTodos());
-        return "/caixa";
+
+    @Autowired
+    private CaixaService caixaService;
+
+    @Autowired
+    private CaixaMapper caixaMapper;
+
+    @GetMapping
+    public ResponseEntity<List<AtualizacaoCaixa>> listarCaixas(){
+        List<Caixa> caixas = caixaService.procurarTodos();
+
+        List<AtualizacaoCaixa> dtos = caixas.stream()
+                .map(caixaMapper::toAtualizacaoDto)
+                .collect(Collectors.toList());
+        return ResponseEntity.ok(dtos);
     }
 
-	@GetMapping("/{id}")
-    public String mostrarFormulario(@RequestParam(required = false) Long id, Model model) {
-		if(id != null) {
-			Caixa caixa = caixaService.procurarPorId(id)
-					.orElseThrow(() -> new EntityNotFoundException("Caixa não encontrada"));
-			model.addAttribute("caixa", caixa);
-		}
-		return "/caixa";       
+    @GetMapping("/{id}")
+    public ResponseEntity<AtualizacaoCaixa> buscarPorId(@PathVariable Long id){
+        return caixaService.procurarPorId(id)
+                .map(caixaMapper::toAtualizacaoDto)
+                .map(ResponseEntity::ok)
+                .orElse(ResponseEntity.notFound().build());
     }
-	
-	@PostMapping
+
+    @PostMapping
     @Transactional
-    public ResponseEntity<?> criar(
-    		@RequestHeader("X-API-KEY") String apiKey,
-            @RequestBody @Valid AtualizacaoCaixa dto) throws Exception {
-
-        if (!CHAVES_VALIDAS.contains(apiKey)) {
-            return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
-                    .body("{\"erro\":\"Chave API inválida\"}");
-        }
+    public ResponseEntity<?> criar(@RequestBody @Valid AtualizacaoCaixa dto) throws Exception {
 
         try {
-            caixaService.save(new Caixa(dto));
-            return ResponseEntity.status(HttpStatus.CREATED).body(dto);
+            Caixa nova = caixaService.salvarOuAtualizar(dto);
+            AtualizacaoCaixa dtoSalvo = caixaMapper.toAtualizacaoDto(nova);
+
+            return ResponseEntity.status(HttpStatus.CREATED).body(nova);
         } catch (EntityNotFoundException e) {
             return ResponseEntity.badRequest().body("{\"erro\":\"Caixa não encontrado\"}");
         }
     }
-	
-	@PutMapping
+
+    @PutMapping
     @Transactional
     public ResponseEntity<AtualizacaoCaixa> atualizar(@RequestBody @Valid AtualizacaoCaixa dto) {
         if (dto.id() == null) {
             return ResponseEntity.badRequest().build();
         }
         try {
-        	caixaService.atualizarCaixa(dto);
+            caixaService.atualizarCaixa(dto);
             return ResponseEntity.ok(dto);
         } catch (EntityNotFoundException e) {
             return ResponseEntity.notFound().build();

@@ -39,7 +39,7 @@ public class ViagemService {
 	
 	public Viagem salvarOuAtualizar(AtualizacaoViagem dto) {
         // Valida se a marca existe
-        Caminhao caminhao = caminhaoService.buscar(dto.caminhaoId())
+        Caminhao caminhao = caminhaoService.procurarPorId(dto.caminhaoId())
             .orElseThrow(() -> new EntityNotFoundException("Caminhão não encontrado com ID: " + dto.caminhaoId()));
         Motorista motorista = motoristaService.buscar(dto.motoristaId())
                 .orElseThrow(() -> new EntityNotFoundException("Caminhão não encontrado com ID: " + dto.motoristaId()));
