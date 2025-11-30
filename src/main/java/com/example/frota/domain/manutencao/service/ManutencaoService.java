@@ -30,7 +30,7 @@ public class ManutencaoService {
 	
 	public Manutencao salvarOuAtualizar(AtualizacaoManutencao dto) {
         // Valida se a marca existe
-        Caminhao caminhao = caminhaoService.buscar(dto.caminhaoId())
+        Caminhao caminhao = caminhaoService.procurarPorId(dto.caminhaoId())
             .orElseThrow(() -> new EntityNotFoundException("Caminhão não encontrado com ID: " + dto.caminhaoId()));
         if (dto.id() != null) {
             // atualizando Busca existente e atualiza

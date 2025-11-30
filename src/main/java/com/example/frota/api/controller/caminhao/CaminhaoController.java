@@ -31,12 +31,6 @@ import java.util.stream.Collectors;
 @CrossOrigin("*")
 public class CaminhaoController {
 
-    private final Set<String> CHAVES_VALIDAS = Set.of(
-            "cco123",
-            "azul123",
-            "frota-secret-key"
-    );
-
     @Autowired
     private CaminhaoService caminhaoService;
 
@@ -62,19 +56,12 @@ public class CaminhaoController {
 
     @PostMapping
     @Transactional
-    public ResponseEntity<?> criar(
-            @RequestHeader("X-API-KEY") String apiKey,
-            @RequestBody @Valid AtualizacaoCaminhao dto) {
-
-        if (!CHAVES_VALIDAS.contains(apiKey)) {
-            return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
-                    .body("{\"erro\":\"Chave API inválida\"}");
-        }
+    public ResponseEntity<?> criar(@RequestBody @Valid AtualizacaoCaminhao dto) {
 
         try {
             Caminhao caminhaoSalvo = caminhaoService.salvarOuAtualizar(dto);
             AtualizacaoCaminhao dtoSalvo = caminhaoMapper.toAtualizacaoDto(caminhaoSalvo);
-            
+
             return ResponseEntity.status(HttpStatus.CREATED).body(dtoSalvo);
         } catch (EntityNotFoundException e) {
             return ResponseEntity.badRequest().body("{\"erro\":\"Marca não encontrada\"}");
@@ -85,7 +72,7 @@ public class CaminhaoController {
     @Transactional
     public ResponseEntity<AtualizacaoCaminhao> atualizar(@RequestBody @Valid AtualizacaoCaminhao dto) {
         if (dto.id() == null) {
-            return ResponseEntity.badRequest().build(); 
+            return ResponseEntity.badRequest().build();
         }
         try {
             Caminhao caminhaoSalvo = caminhaoService.salvarOuAtualizar(dto);

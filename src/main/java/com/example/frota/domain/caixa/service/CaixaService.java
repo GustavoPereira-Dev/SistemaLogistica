@@ -17,9 +17,18 @@ public class CaixaService {
 	@Autowired
 	private CaixaRepository caixaRepository;
 
-	public Caixa save(Caixa caixa) {
-		return caixaRepository.save(caixa);
-	} 
+	public Caixa salvarOuAtualizar(AtualizacaoCaixa dto) {
+        if(dto.id() != null){
+            Caixa existente = caixaRepository.findById(dto.id())
+                    .orElseThrow(() -> new EntityNotFoundException("Caixa não encontrada"));
+            existente.atualizarInformacoes(dto);
+            return caixaRepository.save(existente);
+        } else {
+            Caixa novaCaixa = new Caixa(dto);
+
+            return caixaRepository.save(novaCaixa);
+        }
+	}
 
 	public List<Caixa> procurarTodos() {
 		return caixaRepository.findAll(Sort.by("material").ascending());

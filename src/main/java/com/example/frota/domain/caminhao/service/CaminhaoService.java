@@ -47,10 +47,6 @@ public class CaminhaoService {
         }
     }
 	
-	public Optional<Caminhao> buscar(long id) {
-		return caminhaoRepository.findById(id);
-	}
-	
 	public List<Caminhao> procurarTodos(){
 		return caminhaoRepository.findAll(Sort.by("modelo").ascending());
 	}
